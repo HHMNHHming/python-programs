@@ -1,0 +1,17 @@
+FROM alpine
+
+WORKDIR /app  
+
+COPY . /app  
+
+# nvidia-container-runtime
+ENV NVIDIA_VISIBLE_DEVICES \
+${NVIDIA_VISIBLE_DEVICES:-all}
+
+ENV NVIDIA_DRIVER_CAPABILITIES \
+${NVIDIA_DRIVER_CAPABILITIES:+$NVIDIA_DRIVER_CAPABILITIES,}graphics
+
+
+RUN echo 123 >> 1.txt
+
+CMD tail -f 1.txt
