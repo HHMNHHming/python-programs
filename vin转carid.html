@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <title>VIN码转换为Car ID并校验</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #f4f4f4;
+        margin: 0;
+        padding: 0;
+      }
+
+      .container {
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+        background-color: #fff;
+        border-radius: 5px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      }
+
+      h1 {
+        text-align: center;
+      }
+
+      label {
+        font-weight: bold;
+      }
+
+      input {
+        margin-top: 10px;
+        width: 100%;
+        padding: 8px;
+        margin-bottom: 10px;
+        box-sizing: border-box;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+      }
+
+      button {
+        padding: 8px 20px;
+        background-color: #007bff;
+        color: #fff;
+        border: none;
+        cursor: pointer;
+        border-radius: 5px;
+      }
+
+      button:hover {
+        background-color: #0056b3;
+      }
+
+      p {
+        margin-top: 20px;
+      }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+  </head>
+  <body>
+    <div class="container">
+      <h1>VIN转CarID</h1>
+      <label for="vinInput">请输入VIN码：</label>
+      <input type="text" id="vinInput" placeholder="请输入VIN码" />
+      <button onclick="convertVINToCarID()">转换为CarID</button>
+      <p id="carIDResult"></p>
+      <p id="vinValidationResult"></p>
+    </div>
+
+    <script>
+      function vinToCarID(vin) {
+        var input = vin + vin;
+        try {
+          var hash = CryptoJS.SHA256(input);
+          var hexString = hash.toString(CryptoJS.enc.Hex);
+          return hexString.toUpperCase();
+        } catch (ex) {
+          throw new Error(ex);
+        }
+      }
+
+      function isValidVIN(vin) {
+        if (vin.length !== 17) {
+          return "VIN码长度必须为17位";
+        }
+
+        var firstTwoChars = vin.substring(0, 2);
+        var regex = /^[a-zA-Z0-9]*$/;
+        if (firstTwoChars !== "LG" || !regex.test(vin)) {
+          return "VIN码必须以LG开头，且不包含汉字";
+        }
+
+        return "VIN码格式正确";
+      }
+
+      function convertVINToCarID() {
+        var vin = document.getElementById("vinInput").value;
+        var validationResult = isValidVIN(vin);
+        document.getElementById("vinValidationResult").innerText =
+          validationResult;
+
+        if (validationResult === "VIN码格式正确") {
+          var carID = vinToCarID(vin);
+          document.getElementById("carIDResult").innerText =
+            "转换后的Car ID为：" + carID;
+        } else {
+          document.getElementById("carIDResult").innerText = "";
+        }
+      }
+
+      // SHA-256哈希函数的JavaScript实现
+      function sha256(ascii) {
+        function rightRotate(value, amount) {
+          return (value >>> amount) | (value << (32 - amount));
+        }
+
+        var mathPow = Math.pow;
+        var maxWord = mathPow(2, 32);
+        var lengthProperty = "length";
+        var i, j; // Used as a counter across the whole file
+        var result = "";
+
+        var words = [];
+        var asciiBitLength = ascii[lengthProperty] * 8;
+
+        // 第一步：先处理字符串
+        for (i = 0; i < asciiBitLength - 1; i += 8) {
+          words[i >> 5] |= (ascii.charCodeAt(i / 8) & 255) << (24 - (i % 32));
+        }
+        words[asciiBitLength >> 5] |= 128 << (24 - (asciiBitLength % 32));
+        words[(((asciiBitLength + 64) >> 9) << 4) + 15] = asciiBitLength;
+
+        var w = [];
+        var a = 1732584193;
+        var b = -271733879;
+        var c = -1732584194;
+        var d = 271733878;
+        var e = -1009589776;
+
+        for (i = 0; i < words[lengthProperty]; i += 16) {
+          var olda = a;
+          var oldb = b;
+          var oldc = c;
+          var oldd = d;
+          var olde = e;
+
+          for (j = 0; j < 80; j++) {
+            if (j < 16) {
+              w[j] = words[i + j];
+            } else {
+              w[j] = (w[j - 3] ^ w[j - 8] ^ w[j - 14] ^ w[j - 16]) << 1;
+            }
+
+            var t =
+              ((a << 5) | (a >>> 27)) +
+              e +
+              w[j] +
+              (j < 20
+                ? ((b & c) | (~b & d)) + 1518500249
+                : j < 40
+                ? (b ^ c ^ d) + 1859775393
+                : j < 60
+                ? ((b & c) | (b & d) | (c & d)) - 1894007588
+                : (b ^ c ^ d) - 899497514);
+
+            e = d;
+            d = c;
+            c = rightRotate(b, 30);
+            b = a;
+            a = t;
+          }
+
+          a = a + olda;
+          b = b + oldb;
+          c = c + oldc;
+          d = d + oldd;
+          e = e + olde;
+        }
+        result =
+          ("00000000" + (a >>> 0).toString(16)).slice(-8) +
+          ("00000000" + (b >>> 0).toString(16)).slice(-8) +
+          ("00000000" + (c >>> 0).toString(16)).slice(-8) +
+          ("00000000" + (d >>> 0).toString(16)).slice(-8) +
+          ("00000000" + (e >>> 0).toString(16)).slice(-8);
+        return result;
+      }
+    </script>
+  </body>
+</html>
